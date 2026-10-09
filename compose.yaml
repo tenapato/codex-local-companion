@@ -1,0 +1,30 @@
+services:
+  companion:
+    build:
+      context: .
+      args:
+        CLC_RUNTIME_SOURCE: ${CLC_RUNTIME_SOURCE:-npm}
+    # Linux host networking preserves loopback binding inside and outside Docker.
+    # There are no published ports and no public listener. Target: Daemon Server.
+    network_mode: host
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 1g
+    cpus: 2
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m,mode=1777
+    volumes:
+      - companion_state:/state
+    environment:
+      CLC_STATE: /state
+    stop_grace_period: 15s
+    logging:
+      driver: local
+      options:
+        max-size: 1m
+        max-file: "2"
+volumes:
+  companion_state:

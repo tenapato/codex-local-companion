@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Codex Local Companion</title>
+  <link rel="stylesheet" href="/demo/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar"><a class="brand" href="#" aria-label="Local Companion home"><span class="brand-mark">C</span><span>Local Companion</span></a><span class="local-label"><i></i> LOCAL ONLY</span></header>
+    <section class="intro"><p class="eyebrow">YOUR MACHINE · YOUR SESSION</p><h1>Draft with your<br>Codex account.</h1><p class="lede">Pair this browser with your private companion, then sign in to Codex and generate a structured draft.</p></section>
+    <section class="panel" aria-labelledby="connection-heading">
+      <div class="panel-heading"><div><p class="eyebrow">01 / CONNECTION</p><h2 id="connection-heading">Connect your companion</h2></div><span id="connectionState" class="badge offline">Not connected</span></div>
+      <div id="pairingView" class="pairing-row"><label class="field grow"><span>One-time pairing code</span><input id="pairCode" type="password" autocomplete="off" spellcheck="false" placeholder="Paste the code from your CLI"></label><button id="pairButton" class="button primary">Pair browser <span aria-hidden="true">↗</span></button></div>
+      <div id="connectedView" class="connected-row" hidden><div><strong id="sessionName">Connected</strong><p id="sessionMeta" class="muted"></p></div><button id="disconnectButton" class="button subtle">Disconnect</button></div>
+      <p id="connectionNote" class="microcopy">Pairing authorizes this browser to reach your local companion. It is separate from signing in to Codex.</p>
+      <p id="connectionError" class="message error" role="alert" hidden></p>
+    </section>
+    <section class="panel" aria-labelledby="account-heading">
+      <div class="panel-heading"><div><p class="eyebrow">02 / ACCOUNT</p><h2 id="account-heading">Codex sign-in</h2></div><span id="accountState" class="badge">Unknown</span></div>
+      <div class="account-row"><p id="accountSummary" class="muted">Pair first to check the companion's Codex session.</p><button id="refreshButton" class="button subtle" disabled>Refresh status</button><button id="loginButton" class="button subtle" disabled>Sign in to Codex</button><button id="logoutButton" class="button subtle" disabled>Sign out</button></div>
+      <div id="loginDetails" class="login-details" hidden><p>Open the link and enter this one-time code:</p><a id="verificationLink" target="_blank" rel="noopener noreferrer"></a><code id="userCode"></code></div>
+      <p class="microcopy">Managed sign-in requires an account-admin session granted with <code>pair --account-admin</code>.</p>
+    </section>
+    <section class="panel generation" aria-labelledby="generation-heading">
+      <div class="panel-heading"><div><p class="eyebrow">03 / GENERATION</p><h2 id="generation-heading">Make something useful</h2></div><span class="quiet-tag">STRUCTURED OUTPUT</span></div>
+      <div class="select-row"><label class="field"><span>Model</span><select id="modelSelect" disabled><option>Pair to load models</option></select></label><label class="field"><span>Reasoning effort</span><select id="effortSelect" disabled><option>Select a model</option></select></label></div>
+      <label class="field prompt-field"><span>What should Codex draft?</span><textarea id="prompt" rows="5" placeholder="Describe the draft you need. For example: Write a short, warm follow-up email after a product demo." disabled></textarea></label>
+      <div class="schema-line"><span class="schema-icon">{ }</span><span>Output shape</span><code>{ "draft": "string" }</code></div>
+      <div class="action-row"><p class="microcopy">Codex processes this draft with your signed-in account.</p><div><button id="cancelButton" class="button subtle" hidden>Cancel</button><button id="generateButton" class="button primary" disabled>Generate draft <span aria-hidden="true">↗</span></button></div></div>
+      <p id="generationMessage" class="message" role="status" hidden></p>
+      <section id="resultCard" class="result-card" aria-labelledby="result-heading" hidden><div class="result-heading"><h3 id="result-heading">Your draft</h3><span class="quiet-tag">READY</span></div><pre id="resultText"></pre></section>
+    </section>
+    <footer><span>Local Companion</span><span>Codex sends prompts to OpenAI. The companion keeps job results in memory for up to 10 minutes.</span></footer>
+  </main>
+  <script type="module" src="/demo/demo.js"></script>
+</body>
+</html>
