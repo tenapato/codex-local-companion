@@ -54,24 +54,24 @@ Open `http://127.0.0.1:43127/demo`, paste the pairing code within two minutes, t
 Keep the first run in the foreground so startup and runtime errors remain visible. The service should report `http://127.0.0.1:43127/demo`. Sign-in is interactive and belongs to the owner, never to the browser:
 
 ```sh
-docker compose exec companion node dist/src/cli.js login
+docker compose exec companion node /app/dist/src/cli.js login
 ```
 
 Complete the displayed device-code flow. To pair a browser origin, use its exact origin (scheme, host, and port, without a path):
 
 ```sh
-docker compose exec companion node dist/src/cli.js pair https://your-app.example 'Local demo'
+docker compose exec companion node /app/dist/src/cli.js pair https://your-app.example 'Local demo'
 ```
 
 Use `--account-admin` only for a trusted personal demo that should be able to start or end the Codex account login session:
 
 ```sh
-docker compose exec companion node dist/src/cli.js pair http://127.0.0.1:43127 'Local demo' --account-admin
+docker compose exec companion node /app/dist/src/cli.js pair http://127.0.0.1:43127 'Local demo' --account-admin
 ```
 
 The CLI prints a single-use pairing code valid for 120 seconds. Enter it into the browser app. The included demo is served at `/demo`; it can redeem a code at the same loopback service. The demo flow can use a paired account-admin session for managed device login. Account-admin access is broader than ordinary draft access; grant it only to your own trusted app.
 
-Use `docker compose exec companion node dist/src/cli.js pairings` to inspect active pairings and `docker compose exec companion node dist/src/cli.js revoke SESSION_ID` to revoke one. `docker compose down` stops the service. `docker compose down --volumes` also deletes its persisted profile and login state; this is destructive. To invalidate the saved Codex sign-in before deleting state, run the owner CLI `logout` command.
+Use `docker compose exec companion node /app/dist/src/cli.js pairings` to inspect active pairings and `docker compose exec companion node /app/dist/src/cli.js revoke SESSION_ID` to revoke one. `docker compose down` stops the service. `docker compose down --volumes` also deletes its persisted profile and login state; this is destructive. To invalidate the saved Codex sign-in before deleting state, run the owner CLI `logout` command.
 
 ## Open the demo from a Mac
 

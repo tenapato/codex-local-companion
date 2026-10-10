@@ -30,10 +30,10 @@ If the tunnel connector is later moved off host networking, loopback no longer r
 
 ## Pair and sign in
 
-Open Dokploy's terminal for the **companion** container and run:
+Open Dokploy's terminal for the **companion** container and run the absolute path below. Dokploy may open the terminal in `/` rather than the image's `/app` working directory:
 
 ```sh
-node dist/src/cli.js pair https://codex.tenapatricio.com 'Personal browser' --account-admin
+node /app/dist/src/cli.js pair https://codex.tenapatricio.com 'Personal browser' --account-admin
 ```
 
 Open `https://codex.tenapatricio.com/`, enter the pairing code within two minutes, then use **Sign in to Codex** and complete the device authorization yourself. Pairing a browser and signing into Codex remain separate. Ordinary application pairings should omit `--account-admin`.
@@ -41,10 +41,10 @@ Open `https://codex.tenapatricio.com/`, enter the pairing code within two minute
 Other owner commands in the same container terminal:
 
 ```sh
-node dist/src/cli.js status
-node dist/src/cli.js pairings
-node dist/src/cli.js revoke SESSION_ID
-node dist/src/cli.js logout
+node /app/dist/src/cli.js status
+node /app/dist/src/cli.js pairings
+node /app/dist/src/cli.js revoke SESSION_ID
+node /app/dist/src/cli.js logout
 ```
 
 The private owner socket is not exposed through the HTTP service. Anyone with Dokploy/container-terminal access can administer the account and should be trusted accordingly.

@@ -11,7 +11,7 @@ Except for static demo/client assets and `POST /v1/pair`, API calls require both
 The owner creates a pairing over the private Unix socket, not the HTTP API:
 
 ```sh
-docker compose exec companion node dist/src/cli.js pair https://your-app.example 'My app'
+docker compose exec companion node /app/dist/src/cli.js pair https://your-app.example 'My app'
 ```
 
 The CLI returns a code valid for 120 seconds. The browser exchanges it once:
