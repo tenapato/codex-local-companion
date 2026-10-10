@@ -1,8 +1,18 @@
 # Codex Local Companion
 
-Codex Local Companion is a personal, loopback-only draft-generation service. It lets an explicitly paired browser app request drafts through the official Codex app-server while keeping the user's sign-in on the host. It does not provide API-key billing or an unauthenticated fallback.
+Codex Local Companion is a personal draft-generation service that binds to loopback by default. It lets an explicitly paired browser app request drafts through the official Codex app-server while keeping the user's sign-in on the host. It does not provide API-key billing or an unauthenticated fallback.
 
-The service is designed for one user's Linux machine, such as a private Daemon Server. Docker Compose uses Linux host networking so the listener can bind to `127.0.0.1`; it publishes no public port. It is not a public or multi-user service. Read [Security](docs/SECURITY.md) before pairing an origin or using it with a browser app.
+The service is designed for one user's Linux machine, such as a private Daemon Server. The default Compose file uses Linux host networking and a loopback listener. An explicit [Dokploy and Cloudflare Tunnel mode](docs/DOKPLOY.md) serves the demo over HTTPS while retaining origin-bound pairing for every API session. It does not share an account with other users. Read [Security](docs/SECURITY.md) before pairing an origin or using it with a browser app.
+
+## Dokploy and Cloudflare Tunnel
+
+Use `./compose.dokploy.yaml` as the Dokploy Compose Path, with repository `tenapato/codex-local-companion`, branch `main`. Set:
+
+```dotenv
+CLC_PUBLIC_ORIGIN=https://codex.tenapatricio.com
+```
+
+Add the hostname to Dokploy service `companion`, container port `43127`, path `/`. Route the Cloudflare Tunnel hostname to the Dokploy router; or route the existing host-network tunnel directly to `http://127.0.0.1:43127`. Both use the public hostname as the request Host. Cloudflare handles browser HTTPS. No Cloudflare Access policy is required in this mode: the demo is public, but API usage requires a short-lived pairing code issued by the server owner. See the [deployment guide](docs/DOKPLOY.md) for exact settings, owner commands, and verification.
 
 ## Requirements
 
@@ -71,7 +81,7 @@ For a remote Linux host named `daemonserver`, forward the loopback port over SSH
 ssh -N -L 127.0.0.1:43127:127.0.0.1:43127 daemonserver
 ```
 
-Then open `http://127.0.0.1:43127/demo` on the Mac. The SSH tunnel must remain open. `./run.sh` on macOS handles startup and this forward automatically; use the manual command when the service is already running. The companion sees the browser origin as the local Mac origin; pair that exact origin (for example, `http://127.0.0.1:5173` for a separately hosted dev app). Do not expose the host port through a router, reverse proxy, or public tunnel.
+Then open `http://127.0.0.1:43127/demo` on the Mac. The SSH tunnel must remain open. `./run.sh` on macOS handles startup and this forward automatically; use the manual command when the service is already running. The companion sees the browser origin as the local Mac origin; pair that exact origin (for example, `http://127.0.0.1:5173` for a separately hosted dev app). Keep the default local mode behind this private forward. Use the explicit Dokploy configuration for public HTTPS transport.
 
 Browser access from an HTTPS production page to a local HTTP companion depends on browser local-network protections, site permissions, and the app's Content Security Policy. This compatibility path has not been verified across browsers; see [Security](docs/SECURITY.md#browser-local-network-access).
 

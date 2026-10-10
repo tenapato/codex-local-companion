@@ -18,7 +18,8 @@ FROM runtime-base AS runtime-npm
 ARG TARGETARCH
 RUN case "$TARGETARCH" in amd64) codex_arch=x64;; arm64) codex_arch=arm64;; *) exit 1;; esac \
     && npm install -g --omit=optional --no-audit --no-fund --fetch-retries=0 --fetch-timeout=120000 \
-      @openai/codex@0.155.1 "@openai/codex-linux-${codex_arch}@npm:@openai/codex@0.155.1-linux-${codex_arch}"
+      @openai/codex@0.155.1 "@openai/codex-linux-${codex_arch}@npm:@openai/codex@0.155.1-linux-${codex_arch}" \
+    && codex --version | grep -Fx 'codex-cli 0.155.1'
 FROM runtime-base AS runtime-local
 # Optional offline build input, prepared by run.sh. Only a verified ELF executable.
 COPY .runtime/codex /usr/local/bin/codex

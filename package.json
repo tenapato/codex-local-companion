@@ -2,7 +2,7 @@
   "name": "codex-local-companion",
   "version": "0.1.0",
   "private": true,
-  "description": "Personal, loopback-only browser companion for the official Codex app-server",
+  "description": "Personal browser companion for the official Codex app-server, local by default with optional HTTPS transport",
   "license": "MIT",
   "type": "module",
   "engines": {

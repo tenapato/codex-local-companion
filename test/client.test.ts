@@ -34,3 +34,20 @@ test('browser cancellation requests DELETE and pre-aborted generation submits no
     const count=calls.length;await assert.rejects(c.generate(options),(e:any)=>e.name==='AbortError');assert.equal(calls.length,count);
   }finally{globalThis.fetch=original;}
 });
+test('remote client requires explicit HTTPS transport and keeps authentication in its pairing token',async()=>{
+  const origin='https://codex.example.com';
+  assert.throws(()=>new CompanionClient(origin));
+  for(const value of ['http://codex.example.com','https://user@codex.example.com','https://codex.example.com/path','https://127.0.0.1']){
+    assert.throws(()=>new CompanionClient(value,{transport:'remote-https'}));
+  }
+  const original=globalThis.fetch; const calls:RequestInit[]=[];
+  globalThis.fetch=(async(url,init)=>{
+    assert.ok(String(url).startsWith(origin+'/v1/'));calls.push(init!);
+    return Response.json(String(url).endsWith('/pair')?{token:'remote-token',session:{id:'remote-session'}}:{authenticated:false});
+  }) as typeof fetch;
+  try{
+    const client=new CompanionClient(origin,{transport:'remote-https'});await client.pair('synthetic');await client.status();
+    assert.equal(calls[0].credentials,'omit'); assert.equal(calls[0].redirect,'error');
+    assert.equal((calls[1].headers as Record<string,string>).Authorization,'Bearer remote-token');
+  }finally{globalThis.fetch=original;}
+});

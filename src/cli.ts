@@ -7,6 +7,7 @@ import { Jobs } from './jobs.js';
 import { Runtime, prepareProfile } from './runtime.js';
 import { createHttp, jsonBody, send } from './http.js';
 import { Failure } from './errors.js';
+import { networkConfig } from './network.js';
 const root=resolve(fileURLToPath(new URL('../..',import.meta.url)));
 const state=resolve(process.env.CLC_STATE??join(root,'.state'));
 const socket=join(state,'owner.sock');
@@ -21,6 +22,7 @@ async function owner(action:string,body:unknown={}){
   });
 }
 async function start(){
+  const network=networkConfig();
   process.umask(0o077);
   const profile=await prepareProfile(state);
   // Never unlink an active owner socket. A leftover socket requires an explicit owner cleanup.
@@ -29,7 +31,7 @@ async function start(){
   const pairings=new Pairings();const jobs=new Jobs((v,s)=>runtime.generate(v,s));
   const port=Number(process.env.CLC_PORT??43127);
   if(!Number.isInteger(port)||port<1024||port>65535)throw new Failure('invalid_port');
-  const http=createHttp(runtime,pairings,jobs,port,root);
+  const http=createHttp(runtime,pairings,jobs,port,root,network);
   const admin=createServer(async(req,res)=>{
     try{
       const b=await jsonBody(req);let value:unknown;
@@ -47,9 +49,10 @@ async function start(){
   const cleanup=async()=>{jobs.cancelAll();http.closeAllConnections();http.close();admin.close();await runtime.close();await unlink(socket).catch(()=>{});};
   try{
     await new Promise<void>((ok,no)=>{admin.once('error',no);admin.listen(socket,()=>ok());});await chmod(socket,0o600);
-    await new Promise<void>((ok,no)=>{http.once('error',no);http.listen(port,'127.0.0.1',()=>ok());});
+    await new Promise<void>((ok,no)=>{http.once('error',no);http.listen(port,network.bind,()=>ok());});
   }catch(e){await cleanup();throw e;}
-  console.log(`Codex Local Companion: http://127.0.0.1:${port}/demo`);
+  console.log(`Codex Local Companion: ${network.publicOrigin??`http://127.0.0.1:${port}`}/demo`);
+  if(network.publicOrigin)console.log('Remote HTTPS mode: public demo; API requests still require origin-bound pairing. Cloudflare Access is not configured by this service.');
   console.log(`Runtime ${runtime.version}; inference ${runtime.inferenceEnabled?'enabled':'blocked: runtime not verified'}. Pair using the owner CLI.`);
   const shutdown=()=>{void cleanup().finally(()=>process.exit(0));};process.once('SIGINT',shutdown);process.once('SIGTERM',shutdown);
 }

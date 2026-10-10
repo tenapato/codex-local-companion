@@ -1,0 +1,41 @@
+# Dokploy Compose Path: ./compose.dokploy.yaml
+# Cloudflare Tunnel may route to the host loopback port or to Dokploy's domain router.
+services:
+  companion:
+    build:
+      context: .
+      args:
+        CLC_RUNTIME_SOURCE: ${CLC_RUNTIME_SOURCE:-npm}
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    pids_limit: 128
+    mem_limit: 1g
+    cpus: 2
+    ports:
+      - '127.0.0.1:43127:43127'
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m,mode=1777
+    volumes:
+      - companion_state:/state
+    environment:
+      CLC_STATE: /state
+      CLC_BIND: 0.0.0.0
+      CLC_PUBLIC_ORIGIN: ${CLC_PUBLIC_ORIGIN:?Set CLC_PUBLIC_ORIGIN to the exact public HTTPS origin}
+    healthcheck:
+      test: [CMD, node, dist/src/cli.js, status]
+      interval: 30s
+      timeout: 25s
+      start_period: 20s
+      retries: 3
+    stop_grace_period: 15s
+    logging:
+      driver: local
+      options:
+        max-size: 1m
+        max-file: '2'
+volumes:
+  companion_state:
+    name: codex-local-companion-state

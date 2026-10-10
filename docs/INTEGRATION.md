@@ -1,6 +1,6 @@
 # Integration boundary
 
-The companion exposes a local draft-generation service and a framework-independent client. It does not implement Litho-Graphic integration. Treat the companion response as untrusted draft material; the host application retains all authority over domain data and persistence.
+The companion exposes a personal draft-generation service and a framework-independent client, using loopback by default or an explicitly configured HTTPS endpoint. It does not implement Litho-Graphic integration. Treat the companion response as untrusted draft material; the host application retains all authority over domain data and persistence.
 
 ## Recommended flow
 
@@ -57,3 +57,5 @@ Use only the model IDs and effort values returned by `models()`. Keep context wi
 ## Browser deployment considerations
 
 A browser page at an HTTPS origin may be blocked when it calls the HTTP loopback service, depending on browser local-network permissions and policy. Content Security Policy must allow the companion in `connect-src`, and browser local-network access behavior may require user action. Neither HTTPS browser access nor any specific Litho-Graphic deployment path is verified by this repository. See [Security](SECURITY.md#browser-local-network-access) and test the exact browser and app configuration.
+
+For the optional Dokploy/Cloudflare deployment, construct the client with the exact HTTPS endpoint and `{ transport: 'remote-https' }`. Pair the integrating application's origin, keep its token in browser memory, and permit that endpoint in `connect-src`. The hosted Worker does not receive the pairing token or Codex credentials. This removes the HTTP-loopback transport dependency, but actual browser and application behavior must still be tested. See [DOKPLOY.md](DOKPLOY.md).

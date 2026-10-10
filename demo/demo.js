@@ -1,7 +1,14 @@
 import { CompanionClient } from '/client/index.js';
 
 const $ = (id) => document.getElementById(id);
-const client = new CompanionClient(location.origin);
+const remote = location.protocol === 'https:';
+const client = new CompanionClient(location.origin, { transport: remote ? 'remote-https' : 'loopback' });
+if (remote) {
+  document.querySelector('.local-label').textContent = 'PERSONAL SERVER';
+  document.querySelector('.intro .eyebrow').textContent = 'YOUR SERVER · YOUR SESSION';
+  $('connectionNote').textContent = 'Pairing authorizes this browser to use your personal server. It is separate from signing in to Codex.';
+  document.title = 'Codex Local Companion · Personal server';
+}
 let session = null;
 let activeController = null;
 let availableModels = [];

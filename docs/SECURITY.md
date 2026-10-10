@@ -1,10 +1,12 @@
 # Security model and operational limits
 
-Codex Local Companion is a personal draft-generation bridge for one user's machine. It is not a public service, a multi-tenant gateway, or a general Codex proxy. The implementation uses the official Codex app-server and a private Codex profile. It does not accept API keys or switch to API billing when subscription authentication is unavailable.
+Codex Local Companion is a personal draft-generation bridge for one user's machine. It is not a multi-tenant gateway or a general Codex proxy. The implementation uses the official Codex app-server and a private Codex profile. It does not accept API keys or switch to API billing when subscription authentication is unavailable.
 
 ## Network and browser boundary
 
-The HTTP listener binds to `127.0.0.1` only. The included Linux Compose configuration uses host networking and publishes no ports; host networking preserves the loopback boundary inside Docker. The server accepts only loopback Host values and rejects forwarded proxy headers. It does not mount the Docker socket. Do not put a reverse proxy in front of it or expose it through a router, tunnel, or public interface.
+The default HTTP listener binds to `127.0.0.1`. The local Compose configuration uses host networking and publishes no ports. Local mode accepts only loopback Host values and rejects forwarded proxy headers. It does not mount the Docker socket.
+
+The optional Dokploy configuration explicitly enables remote HTTPS transport with `CLC_PUBLIC_ORIGIN`. It binds inside its container on `0.0.0.0`, publishes only a host-loopback port, and permits the exact configured public Host through Cloudflare Tunnel or Dokploy's router. Proxy headers never grant identity or authorization. This changes the threat boundary: the demo and pairing redemption route are internet reachable, and Cloudflare terminates browser TLS. Cloudflare Access is left off at the owner's request. The pairing code and browser bearer token are therefore the access controls for the inference API. Never distribute them to other users or embed them in frontend code, URLs, hosted servers, or public logs. Pairing redemption is rate-limited, but this release does not claim protection against every application-layer denial of service.
 
 Each browser origin must be paired by the owner using its exact origin. Pairing codes are single-use and expire after 120 seconds. Browser sessions are bound to that origin, use bearer tokens, expire after eight hours, and are held in memory. API GETs also require Origin and bearer authorization. CORS preflight accepts only GET, POST, and DELETE and only Authorization and Content-Type headers. A pairing token is a bearer credential: anyone who obtains it can act within that browser session's permissions until it is revoked or expires.
 
@@ -20,7 +22,7 @@ The browser can submit only bounded instructions, quoted `user`/`assistant` conv
 
 ## Data and persistence
 
-Prompts and generated drafts are processed by Codex using the signed-in account and its applicable service terms and controls. The companion does not intentionally log prompt bodies, generated text, or bearer tokens. Docker's local logging driver bounds service logs, but Codex itself may keep local logs, caches, SQLite data, or `auth.json` under the isolated `/state/codex` profile. Do not assume zero disk persistence.
+Prompts and generated drafts are processed by Codex using the signed-in account and its applicable service terms and controls. In tunnel mode, requests and results also pass through Cloudflare, which terminates HTTPS; review any enabled edge request logging. OpenAI credentials stay in the isolated profile and are never returned over the tunnel. The companion does not intentionally log prompt bodies, generated text, or bearer tokens. Docker's local logging driver bounds service logs, but Codex itself may keep local logs, caches, SQLite data, or `auth.json` under the isolated `/state/codex` profile. Do not assume zero disk persistence.
 
 The Compose volume `companion_state` persists the isolated profile and account login across restarts. Browser sessions and pairing codes are in memory and are revoked on restart. To revoke one browser session, use `docker compose exec companion node dist/src/cli.js revoke SESSION_ID`; to end the Codex login, use the owner `logout` command (which calls app-server `account/logout` and cancels all jobs; browser pairings remain valid). `docker compose down --volumes` deletes the persistent profile and login state and is destructive.
 

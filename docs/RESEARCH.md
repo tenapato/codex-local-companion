@@ -29,8 +29,8 @@ The synthetic provider exists only in the tool test. The browser API cannot sele
 
 ## Browser transport
 
-The companion uses HTTP fetch with Origin and bearer checks, explicit CORS, and preflight support for authorized or pending origins. The client uses POST variants of reads so same-origin requests also carry Origin. DNS rebinding is constrained by exact loopback Host validation; forwarded proxy headers are rejected.
+The companion uses HTTP fetch with Origin and bearer checks, explicit CORS, and preflight support for authorized or pending origins. The client uses POST variants of reads so same-origin requests also carry Origin. Local mode constrains DNS rebinding through exact loopback Host validation and rejects forwarded proxy headers. The optional remote HTTPS mode adds one explicitly configured public Host, ignores its forwarding headers for authorization, and preserves all origin-bound session checks. It does not change the private app-server protocol or account authentication workflow.
 
 [Chrome documents local-network permissions for public pages reaching loopback](https://developer.chrome.com/blog/local-network-access). [MDN describes local-network requests](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Local_network_access) and [loopback mixed-content behavior](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Mixed_content). Browser permissions, application CSP, OS policy, and browser version all matter. PNA response headers alone do not establish compatibility with Chrome's newer permission model.
 
-See [VALIDATION.md](VALIDATION.md) for measured results and outstanding sign-in/browser checks. No public tunnel or externally reachable companion was created.
+See [VALIDATION.md](VALIDATION.md) for measured results and outstanding sign-in/browser checks, and [DOKPLOY.md](DOKPLOY.md) for the explicit remote deployment configuration. Hostname and tunnel configuration are separate from the runtime protocol checks.

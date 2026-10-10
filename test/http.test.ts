@@ -8,11 +8,11 @@ import { Jobs } from '../src/jobs.js';
 import { input } from '../src/validation.js';
 
 const port=43127, host=`127.0.0.1:${port}`, origin='https://client.example';
-async function setup() {
+async function setup(publicOrigin?:string) {
   const pairings=new Pairings(); const code=pairings.issue(origin,'client'); const {token}=pairings.redeem(origin,code.code);
   const runtime:any={control:{request:async()=>({})},status:async()=>({ok:true})};
   const jobs=new Jobs(async(v)=>({text:v.messages[0].content}));
-  const server=createHttp(runtime,pairings,jobs,port,process.cwd());
+  const server=createHttp(runtime,pairings,jobs,port,process.cwd(),{publicOrigin});
   try { await new Promise<void>((yes,no)=>{server.once('error',no);server.listen(0,'127.0.0.1',yes);}); }
   catch(e) { server.close(); throw e; }
   const address=server.address() as any; const base=`http://127.0.0.1:${address.port}`;
@@ -39,6 +39,33 @@ test('HTTP rejects untrusted Host, origin, CORS and preflight methods',async(t)=
     assert.equal(cors.status,204); assert.equal(cors.headers.get('access-control-allow-origin'),origin);
     const proxy=await req('/v1/status',{headers:{origin,'x-forwarded-host':'127.0.0.1'}}); assert.equal(proxy.status,403);
   } finally {server.closeAllConnections(); server.close(); await once(server,'close');}
+});
+test('remote HTTPS mode serves a public demo while pairing and inference remain protected',async(t)=>{
+  const publicOrigin='https://codex.example.com';
+  let ctx; try {ctx=await setup(publicOrigin);} catch(e:any){if(e.code==='EPERM'){t.skip('sandbox does not permit loopback listeners');return;}throw e;}
+  const {server,req,pairings}=ctx;
+  const proxy={host:'codex.example.com','x-forwarded-for':'192.0.2.1','x-forwarded-proto':'https','x-forwarded-host':'codex.example.com'};
+  try{
+    assert.equal((await req('/',{headers:proxy})).status,200);
+    assert.equal((await req('/demo',{headers:{...proxy,'sec-fetch-site':'cross-site','sec-fetch-mode':'navigate'}})).status,200);
+    assert.equal((await req('/demo/demo.js',{headers:{...proxy,'sec-fetch-site':'cross-site','sec-fetch-mode':'no-cors'}})).status,403);
+    assert.equal((await req('/v1/status',{headers:{...proxy,host:'attacker.example'}})).status,403);
+    assert.equal((await req('/v1/status',{headers:proxy})).status,403);
+    const code=pairings.issue(publicOrigin,'remote demo');
+    const pre=await req('/v1/pair',{method:'OPTIONS',headers:{...proxy,origin:publicOrigin,'access-control-request-method':'POST','access-control-request-headers':'content-type'}});
+    assert.equal(pre.status,204); assert.equal(pre.headers.get('access-control-allow-origin'),publicOrigin);
+    const json={...proxy,origin:publicOrigin,'content-type':'application/json'};
+    assert.equal((await req('/v1/jobs',{method:'POST',headers:json,body:'{}'})).status,401);
+    const paired=await req('/v1/pair',{method:'POST',headers:json,body:JSON.stringify({code:code.code})});
+    assert.equal(paired.status,200);const {token}=await paired.json();
+    assert.equal((await req('/v1/pair',{method:'POST',headers:json,body:JSON.stringify({code:code.code})})).status,401);
+    const auth={...json,authorization:`Bearer ${token}`};
+    assert.equal((await req('/v1/status',{method:'POST',headers:auth,body:'{}'})).status,200);
+    assert.equal((await req('/v1/status',{method:'POST',headers:{...auth,origin},body:'{}'})).status,401);
+    assert.equal((await req('/v1/login',{method:'POST',headers:auth,body:'{}'})).status,403);
+    assert.equal((await req('/v1/session',{method:'DELETE',headers:auth})).status,200);
+    assert.equal((await req('/v1/status',{method:'POST',headers:auth,body:'{}'})).status,403);
+  }finally{server.closeAllConnections();server.close();await once(server,'close');}
 });
 test('HTTP authorizes exact endpoints and keeps job access session-scoped',async(t)=>{
   let ctx; try { ctx=await setup(); } catch(e:any) { if(e.code==='EPERM'){t.skip('sandbox does not permit loopback listeners');return;} throw e; }

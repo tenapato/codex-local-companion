@@ -1,6 +1,8 @@
 # HTTP API and browser client
 
-The service listens on `http://127.0.0.1:43127` by default. It accepts only loopback Host values (`127.0.0.1:<port>` or `localhost:<port>`), rejects forwarded proxy headers, and does not publish a Docker port. A different port can be selected with `CLC_PORT` (1024–65535); the demo uses its current origin, while the startup script's SSH forward uses the default port.
+The service listens on `http://127.0.0.1:43127` by default. Local mode accepts only loopback Host values (`127.0.0.1:<port>` or `localhost:<port>`) and rejects forwarded proxy headers. A different port can be selected with `CLC_PORT` (1024–65535); the demo uses its current origin, while the startup script's SSH forward uses the default port.
+
+Explicit remote mode sets `CLC_PUBLIC_ORIGIN` to a canonical HTTPS origin without a trailing slash. It additionally accepts that exact hostname as Host. Forwarding headers on that Host are ignored for authorization; Origin, pairing, and bearer checks remain mandatory. Set `CLC_BIND=0.0.0.0` only inside the dedicated Dokploy container, whose host port is published on loopback. This bind fails closed without a valid public origin. Static assets at `/`, `/demo`, and their scripts/styles are public in remote mode; the owner socket is never an HTTP route. Cloudflare Access is not required by this implementation.
 
 Except for static demo/client assets and `POST /v1/pair`, API calls require both an exact paired `Origin` header and `Authorization: Bearer <token>`. Pairing is bound to the exact origin. JSON requests must have `Content-Type: application/json`; request bodies are capped at 100,000 bytes. Responses are JSON and marked `no-store`.
 
@@ -104,4 +106,13 @@ await companion.disconnect(); // revokes the session and clears this instance's 
 
 `generate()` submits a job and polls until completion, failure, cancellation, or abort. If an `AbortSignal` fires, it requests job cancellation and rejects with `AbortError`; a network loss or page close can leave a job running until its three-minute timeout. Call `submit()`, `getJob()`, and `cancel()` directly when the application needs to manage polling itself. `disconnect()` revokes the paired session; simply dropping a client instance does not revoke the server-side session, which expires after eight hours.
 
-The constructor accepts only HTTP `localhost` or `127.0.0.1` URLs with no path or credentials. Browser cross-origin access is available only for paired origins. The client does not support remote companion URLs.
+The default constructor accepts only HTTP `localhost` or `127.0.0.1` URLs with no path or credentials. Remote HTTPS requires an explicit transport choice:
+
+```ts
+const companion = new CompanionClient('https://codex.tenapatricio.com', {
+  transport: 'remote-https',
+});
+await companion.pair(code);
+```
+
+Both transports use only the in-memory pairing bearer token; cookies are omitted and redirects are rejected. Remote mode accepts HTTPS hostnames without paths or credentials. Browser cross-origin access remains available only for paired origins. An application must allow the exact HTTPS endpoint in its `connect-src`. Adding Cloudflare Access later requires a separate cookie/token transport design; the current client does not implement Access authentication.

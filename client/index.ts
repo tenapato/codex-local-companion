@@ -39,6 +39,8 @@ export interface GenerateOptions {
   pollIntervalMs?: number;
 }
 
+export interface ClientOptions { transport?: 'loopback' | 'remote-https' }
+
 export class CompanionError extends Error {
   readonly code: string;
   readonly status?: number;
@@ -50,18 +52,26 @@ export class CompanionError extends Error {
   }
 }
 
-/** Browser client for a companion server on the same machine. Tokens live only in this instance. */
+/** Browser client with in-memory pairing tokens. Remote HTTPS must be selected explicitly. */
 export class CompanionClient {
   readonly baseUrl: string;
   private token: string | null = null;
 
-  constructor(baseUrl = 'http://127.0.0.1:43127') {
-    this.baseUrl = CompanionClient.validateBaseUrl(baseUrl);
+  constructor(baseUrl = 'http://127.0.0.1:43127', options: ClientOptions = {}) {
+    this.baseUrl = CompanionClient.validateBaseUrl(baseUrl, options.transport ?? 'loopback');
   }
 
-  private static validateBaseUrl(value: string): string {
+  private static validateBaseUrl(value: string, transport: string): string {
     let url: URL;
     try { url = new URL(value); } catch { throw new TypeError('Companion URL must be an HTTP localhost URL.'); }
+    if (transport === 'remote-https') {
+      if (url.protocol !== 'https:' || url.username || url.password || url.pathname !== '/' || url.search || url.hash ||
+          !url.hostname.includes('.') || url.hostname.endsWith('.localhost') || /^\d+(\.\d+){3}$/.test(url.hostname) || url.hostname.includes(':')) {
+        throw new TypeError('Remote companion URL must be an HTTPS hostname without a path or credentials.');
+      }
+      return url.origin;
+    }
+    if (transport !== 'loopback') throw new TypeError('Unknown companion transport.');
     const host = url.hostname.toLowerCase();
     if (url.protocol !== 'http:' || (host !== 'localhost' && host !== '127.0.0.1') ||
       url.username || url.password || url.pathname !== '/' || url.search || url.hash) {

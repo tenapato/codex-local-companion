@@ -6,7 +6,8 @@ import { Jobs } from './jobs.js';
 import { input } from './validation.js';
 import { Failure } from './errors.js';
 import { models, type Runtime } from './runtime.js';
-export function checkHost(host:unknown,port:number){if(host!==`127.0.0.1:${port}`&&host!==`localhost:${port}`)throw new Failure('invalid_host',403);}
+import type { NetworkConfig } from './network.js';
+export function checkHost(host:unknown,port:number,publicOrigin?:string){if(host!==`127.0.0.1:${port}`&&host!==`localhost:${port}`&&(!publicOrigin||host!==new URL(publicOrigin).host))throw new Failure('invalid_host',403);}
 export async function jsonBody(req:IncomingMessage){
   if(req.headers['content-type']!=='application/json')throw new Failure('json_required',415);
   let size=0;const chunks:Buffer[]=[];
@@ -14,9 +15,9 @@ export async function jsonBody(req:IncomingMessage){
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new Failure('invalid_json');}
 }
 export const send=(res:ServerResponse,status:number,value:unknown)=>{res.writeHead(status,{'content-type':'application/json','cache-control':'no-store'});res.end(JSON.stringify(value));};
-export function createHttp(runtime:Runtime,pairings:Pairings,jobs:Jobs,port:number,root:string){
+export function createHttp(runtime:Runtime,pairings:Pairings,jobs:Jobs,port:number,root:string,network:Pick<NetworkConfig,'publicOrigin'>={}){
   const staticFiles:Record<string,[string,string]>={
-    '/demo':['demo/index.html','text/html; charset=utf-8'], '/demo/':['demo/index.html','text/html; charset=utf-8'],
+    '/':['demo/index.html','text/html; charset=utf-8'], '/demo':['demo/index.html','text/html; charset=utf-8'], '/demo/':['demo/index.html','text/html; charset=utf-8'],
     '/demo/demo.js':['demo/demo.js','text/javascript'], '/demo/style.css':['demo/style.css','text/css'],
     '/client/index.js':['dist/client/index.js','text/javascript'],
   };
@@ -24,12 +25,16 @@ export function createHttp(runtime:Runtime,pairings:Pairings,jobs:Jobs,port:numb
     res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');
     res.setHeader('Content-Security-Policy',"default-src 'self'; connect-src 'self' http://127.0.0.1:43127 http://localhost:43127; script-src 'self'; style-src 'self'; frame-ancestors 'none'; base-uri 'none'");
     try{
-      checkHost(req.headers.host,port);
-      if(req.headers['forwarded']||req.headers['x-forwarded-host']||req.headers['x-forwarded-for'])throw new Failure('proxy_forbidden',403);
+      checkHost(req.headers.host,port,network.publicOrigin);
+      const remote=!!network.publicOrigin&&req.headers.host===new URL(network.publicOrigin).host;
+      // Forwarding headers never establish identity, origin, or authorization.
+      // Only explicit remote mode accepts proxy traffic for the configured Host.
+      if(!remote&&(req.headers['forwarded']||req.headers['x-forwarded-host']||req.headers['x-forwarded-for']))throw new Failure('proxy_forbidden',403);
+      const requestOrigin=remote?network.publicOrigin!:`http://${req.headers.host}`;
       const path=req.url??'';
       if(req.method==='GET'&&staticFiles[path]){
-        if(req.headers.origin&&req.headers.origin!==`http://${req.headers.host}`)throw new Failure('invalid_origin',403);
-        if(req.headers['sec-fetch-site']==='cross-site')throw new Failure('cross_site',403);
+        if(req.headers.origin&&req.headers.origin!==requestOrigin)throw new Failure('invalid_origin',403);
+        if(req.headers['sec-fetch-site']==='cross-site'&&!(remote&&req.headers['sec-fetch-mode']==='navigate'))throw new Failure('cross_site',403);
         const[file,type]=staticFiles[path];res.writeHead(200,{'content-type':type});res.end(await readFile(resolve(root,file)));return;
       }
       const origin=canonicalOrigin(req.headers.origin);
