@@ -30,7 +30,7 @@ For a remote private server, keep the SSH loopback forward open. The browser con
 
 An HTTPS page calling the local HTTP endpoint may be blocked by local-network permissions, mixed-content rules, or its `connect-src` policy. Pair its exact HTTPS origin, permit the specific loopback endpoint in the application CSP, and test the browser's local-network permission allow and deny behavior. Browser compatibility remains unverified in this environment. Do not disable browser security flags. See [browser security details](SECURITY.md#browser-local-network-access) and the [validation record](VALIDATION.md).
 
-For the explicit tunnel deployment, set `CLC_PUBLIC_ORIGIN=https://codex.tenapatricio.com` without a trailing slash. Use the configured public hostname as the request Host and route to container port 43127. A 403 after a Host override to `localhost` can mean the proxy headers were rejected by the local-mode boundary. A 502 from the tunnel usually needs checking the origin service and port. Follow [DOKPLOY.md](DOKPLOY.md) rather than changing the default local mode's checks. Cloudflare Access is intentionally off; pairing remains required.
+For the explicit tunnel deployment, set `CLC_PUBLIC_ORIGIN=https://companion.example.com` without a trailing slash. Use the configured public hostname as the request Host and route to container port 43127. A 403 after a Host override to `localhost` can mean the proxy headers were rejected by the local-mode boundary. A 502 from the tunnel usually needs checking the origin service and port. Follow [DOKPLOY.md](DOKPLOY.md) rather than changing the default local mode's checks. Cloudflare Access is intentionally off; pairing remains required.
 
 ## Privacy and reset
 

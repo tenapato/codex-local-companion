@@ -9,7 +9,7 @@ The service is designed for one user's Linux machine, such as a private Daemon S
 Use `./compose.dokploy.yaml` as the Dokploy Compose Path, with repository `tenapato/codex-local-companion`, branch `main`. Set:
 
 ```dotenv
-CLC_PUBLIC_ORIGIN=https://codex.tenapatricio.com
+CLC_PUBLIC_ORIGIN=https://companion.example.com
 ```
 
 Add the hostname to Dokploy service `companion`, container port `43127`, path `/`. Route the Cloudflare Tunnel hostname to the Dokploy router; or route the existing host-network tunnel directly to `http://127.0.0.1:43127`. Both use the public hostname as the request Host. Cloudflare handles browser HTTPS. No Cloudflare Access policy is required in this mode: the demo is public, but API usage requires a short-lived pairing code issued by the server owner. See the [deployment guide](docs/DOKPLOY.md) for exact settings, owner commands, and verification.
@@ -99,6 +99,10 @@ npm run probe
 `npm test` builds and runs the mocked runtime/HTTP tests. `npm run smoke` performs a real isolated app-server initialize/account/model/thread smoke test without signing in or generating inference. `npm run probe` checks the installed runtime's tool surface through a synthetic local endpoint. The runtime probes do not verify live inference, interactive sign-in, or browser local-network behavior. Docker startup and the probes inside Docker have also been tested separately. See [Validation](docs/VALIDATION.md) for the current recorded status; pending checks should not be read as passed.
 
 A framework-independent TypeScript client is in `client/index.ts`; the build output is `dist/client/index.js`. It is also served at `/client/index.js`. API and client details are in [API](docs/API.md). Litho-Graphic integration is not implemented; the intended boundary is described in [Integration](docs/INTEGRATION.md).
+
+## Pairing guide for AI agents
+
+See [AGENT_PAIRING.md](docs/AGENT_PAIRING.md) for owner commands, browser-origin selection, client pairing, separate Codex sign-in, verification, and revocation. Each companion uses one Codex account; other users need their own instance and isolated profile.
 
 ## Official references
 

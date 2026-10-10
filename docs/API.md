@@ -109,7 +109,7 @@ await companion.disconnect(); // revokes the session and clears this instance's 
 The default constructor accepts only HTTP `localhost` or `127.0.0.1` URLs with no path or credentials. Remote HTTPS requires an explicit transport choice:
 
 ```ts
-const companion = new CompanionClient('https://codex.tenapatricio.com', {
+const companion = new CompanionClient('https://companion.example.com', {
   transport: 'remote-https',
 });
 await companion.pair(code);
